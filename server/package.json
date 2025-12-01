@@ -1,0 +1,21 @@
+{
+    "name": "midi-piano-server",
+    "version": "1.0.0",
+    "description": "MIDI Piano WebSocket Server for receiving MIDI data from smartphone",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "keywords": [
+        "midi",
+        "websocket",
+        "piano"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "ws": "^8.14.2",
+        "easymidi": "^3.0.1",
+        "qrcode-terminal": "^0.12.0"
+    }
+}

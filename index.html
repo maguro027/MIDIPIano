@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>MIDI Piano</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>MIDI Piano</h1>
+
+        <div class="connection-panel">
+            <div class="connection-status">
+                <span class="status-indicator" id="statusIndicator"></span>
+                <span id="statusText">未接続</span>
+            </div>
+            <div class="connection-form">
+                <input type="text" id="serverUrl" placeholder="ws://192.168.x.x:8080" value="ws://localhost:8080">
+                <button id="connectBtn">接続</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>オクターブ: <span id="octaveValue">4</span></label>
+                <div class="octave-buttons">
+                    <button id="octaveDown">-</button>
+                    <button id="octaveUp">+</button>
+                </div>
+            </div>
+            <div class="control-group">
+                <label for="velocity">ベロシティ: <span id="velocityValue">80</span></label>
+                <input type="range" id="velocity" min="1" max="127" value="80">
+            </div>
+        </div>
+
+        <div class="piano-container">
+            <div class="piano-keyboard" id="keyboard">
+                <!-- ピアノキーはJavaScriptで生成 -->
+            </div>
+        </div>
+
+        <div class="info">
+            <p>タップして演奏してください</p>
+            <p>オクターブ範囲: C<span id="rangeStart">4</span> - B<span id="rangeEnd">4</span></p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
