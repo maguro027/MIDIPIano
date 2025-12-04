@@ -32,7 +32,52 @@ h1 {
     background: #f8f9fa;
     padding: 15px;
     border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.midi-output-panel {
+    background: #e8f5e9;
+    padding: 15px;
+    border-radius: 10px;
     margin-bottom: 20px;
+}
+
+.midi-output-panel .connection-form select {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    background: white;
+}
+
+.midi-output-panel .connection-form button {
+    padding: 10px 20px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.midi-output-panel .connection-form button:hover {
+    background: #218838;
+}
+
+.midi-output-panel .connection-form button:active {
+    transform: scale(0.98);
+}
+
+.midi-output-panel .connection-form button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+#midiStatusText {
+    font-weight: 600;
+    color: #333;
 }
 
 .connection-status {

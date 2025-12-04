@@ -40,7 +40,52 @@
             background: #f8f9fa;
             padding: 15px;
             border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .midi-output-panel {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
             margin-bottom: 20px;
+        }
+
+        .midi-output-panel .connection-form select {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .midi-output-panel .connection-form button {
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .midi-output-panel .connection-form button:hover {
+            background: #218838;
+        }
+
+        .midi-output-panel .connection-form button:active {
+            transform: scale(0.98);
+        }
+
+        .midi-output-panel .connection-form button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        #midiStatusText {
+            font-weight: 600;
+            color: #333;
         }
 
         .connection-status {
@@ -369,6 +414,19 @@
             </div>
         </div>
 
+        <div class="midi-output-panel">
+            <div class="connection-status">
+                <span class="status-indicator" id="midiStatusIndicator"></span>
+                <span id="midiStatusText">MIDI未接続</span>
+            </div>
+            <div class="connection-form">
+                <select id="midiOutputSelect">
+                    <option value="">-- MIDIデバイスを選択 --</option>
+                </select>
+                <button id="midiOutputBtn">MIDI接続</button>
+            </div>
+        </div>
+
         <div class="controls">
             <div class="control-group">
                 <label>オクターブ: <span id="octaveValue">4</span></label>
@@ -406,10 +464,16 @@
                 this.activeNotes = new Set();
                 this.touchMap = new Map();
 
+                // Web MIDI API
+                this.midiAccess = null;
+                this.midiOutput = null;
+                this.midiOutputMode = false;
+
                 this.initElements();
                 this.createKeyboard();
                 this.attachEventListeners();
                 this.updateOctaveDisplay();
+                this.initWebMIDI();
             }
 
             initElements() {
@@ -421,6 +485,135 @@
                 this.velocitySlider = document.getElementById('velocity');
                 this.velocityValue = document.getElementById('velocityValue');
                 this.keyboard = document.getElementById('keyboard');
+
+                // MIDI output elements
+                this.midiOutputSelect = document.getElementById('midiOutputSelect');
+                this.midiOutputBtn = document.getElementById('midiOutputBtn');
+                this.midiStatusIndicator = document.getElementById('midiStatusIndicator');
+                this.midiStatusText = document.getElementById('midiStatusText');
+            }
+
+            async initWebMIDI() {
+                if (!navigator.requestMIDIAccess) {
+                    console.log('Web MIDI APIはこのブラウザでサポートされていません');
+                    if (this.midiStatusText) {
+                        this.midiStatusText.textContent = 'Web MIDI非対応';
+                    }
+                    if (this.midiOutputSelect) {
+                        this.midiOutputSelect.disabled = true;
+                    }
+                    if (this.midiOutputBtn) {
+                        this.midiOutputBtn.disabled = true;
+                    }
+                    return;
+                }
+
+                try {
+                    this.midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+                    console.log('Web MIDI API初期化完了');
+                    this.updateMIDIOutputList();
+
+                    this.midiAccess.onstatechange = () => {
+                        this.updateMIDIOutputList();
+                    };
+                } catch (error) {
+                    console.error('Web MIDI API初期化エラー:', error);
+                    if (this.midiStatusText) {
+                        this.midiStatusText.textContent = 'MIDI初期化エラー';
+                    }
+                }
+            }
+
+            updateMIDIOutputList() {
+                if (!this.midiOutputSelect || !this.midiAccess) return;
+
+                const outputs = Array.from(this.midiAccess.outputs.values());
+                this.midiOutputSelect.innerHTML = '<option value="">-- MIDIデバイスを選択 --</option>';
+
+                outputs.forEach((output, index) => {
+                    const option = document.createElement('option');
+                    option.value = output.id;
+                    option.textContent = output.name || `MIDI Output ${index + 1}`;
+                    this.midiOutputSelect.appendChild(option);
+                });
+
+                if (outputs.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'MIDIデバイスが見つかりません';
+                    option.disabled = true;
+                    this.midiOutputSelect.appendChild(option);
+                }
+            }
+
+            toggleMIDIOutput() {
+                if (this.midiOutputMode) {
+                    this.disconnectMIDIOutput();
+                } else {
+                    this.connectMIDIOutput();
+                }
+            }
+
+            connectMIDIOutput() {
+                if (!this.midiAccess || !this.midiOutputSelect) return;
+
+                const selectedId = this.midiOutputSelect.value;
+                if (!selectedId) {
+                    alert('MIDIデバイスを選択してください');
+                    return;
+                }
+
+                this.midiOutput = this.midiAccess.outputs.get(selectedId);
+                if (this.midiOutput) {
+                    this.midiOutputMode = true;
+                    this.updateMIDIOutputStatus(true);
+                    console.log('MIDI出力デバイス接続:', this.midiOutput.name);
+                } else {
+                    alert('MIDIデバイスの接続に失敗しました');
+                }
+            }
+
+            disconnectMIDIOutput() {
+                if (this.midiOutput) {
+                    this.activeNotes.forEach(midiNote => {
+                        this.sendLocalMIDI('noteOff', midiNote, 0);
+                    });
+                }
+                this.midiOutput = null;
+                this.midiOutputMode = false;
+                this.updateMIDIOutputStatus(false);
+                console.log('MIDI出力デバイス切断');
+            }
+
+            updateMIDIOutputStatus(connected) {
+                if (this.midiStatusIndicator) {
+                    if (connected) {
+                        this.midiStatusIndicator.classList.add('connected');
+                    } else {
+                        this.midiStatusIndicator.classList.remove('connected');
+                    }
+                }
+                if (this.midiStatusText) {
+                    this.midiStatusText.textContent = connected ? 'MIDI接続中' : 'MIDI未接続';
+                }
+                if (this.midiOutputBtn) {
+                    this.midiOutputBtn.textContent = connected ? 'MIDI切断' : 'MIDI接続';
+                    this.midiOutputBtn.style.background = connected ? '#dc3545' : '#28a745';
+                }
+                if (this.midiOutputSelect) {
+                    this.midiOutputSelect.disabled = connected;
+                }
+            }
+
+            sendLocalMIDI(type, note, velocity) {
+                if (!this.midiOutput) return;
+
+                const channel = 0;
+                if (type === 'noteOn') {
+                    this.midiOutput.send([0x90 + channel, note, velocity]);
+                } else if (type === 'noteOff') {
+                    this.midiOutput.send([0x80 + channel, note, 0]);
+                }
             }
 
             createKeyboard() {
@@ -473,6 +666,11 @@
 
             attachEventListeners() {
                 this.connectBtn.addEventListener('click', () => this.toggleConnection());
+
+                // MIDI出力ボタン
+                if (this.midiOutputBtn) {
+                    this.midiOutputBtn.addEventListener('click', () => this.toggleMIDIOutput());
+                }
 
                 document.getElementById('octaveUp').addEventListener('click', () => {
                     if (this.octave < 8) {
@@ -668,10 +866,19 @@
             }
 
             sendMIDI(data) {
+                // WebSocket経由で送信
                 if (this.ws && this.ws.readyState === WebSocket.OPEN) {
                     this.ws.send(JSON.stringify(data));
-                } else {
-                    console.warn('WebSocketが接続されていません');
+                }
+
+                // ローカルMIDI出力に送信
+                if (this.midiOutputMode && this.midiOutput) {
+                    this.sendLocalMIDI(data.type, data.note, data.velocity);
+                }
+
+                // どちらも接続されていない場合は警告
+                if ((!this.ws || this.ws.readyState !== WebSocket.OPEN) && !this.midiOutputMode) {
+                    console.warn('WebSocketもMIDI出力も接続されていません');
                 }
             }
         }

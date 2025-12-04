@@ -23,6 +23,19 @@
             </div>
         </div>
 
+        <div class="midi-output-panel">
+            <div class="connection-status">
+                <span class="status-indicator" id="midiStatusIndicator"></span>
+                <span id="midiStatusText">MIDI未接続</span>
+            </div>
+            <div class="connection-form">
+                <select id="midiOutputSelect">
+                    <option value="">-- MIDIデバイスを選択 --</option>
+                </select>
+                <button id="midiOutputBtn">MIDI接続</button>
+            </div>
+        </div>
+
         <div class="controls">
             <div class="control-group">
                 <label>オクターブ: <span id="octaveValue">4</span></label>
