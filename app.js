@@ -43,6 +43,11 @@ class MIDIPiano {
 
         this.ensureAudioContext();
 
+        // 既存のオシレーターがある場合は先に停止
+        if (this.activeOscillators.has(midiNote)) {
+            this.stopLocalSound(midiNote);
+        }
+
         const oscillator = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
 
@@ -72,8 +77,8 @@ class MIDIPiano {
         const oscillatorData = this.activeOscillators.get(midiNote);
         if (oscillatorData) {
             const { oscillator, gainNode } = oscillatorData;
-            gainNode.gain.exponentialRampToValueAtTime(
-                0.001,
+            gainNode.gain.linearRampToValueAtTime(
+                0.01,
                 this.audioContext.currentTime + 0.1
             );
             oscillator.stop(this.audioContext.currentTime + 0.1);
