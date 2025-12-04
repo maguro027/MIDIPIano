@@ -27,9 +27,21 @@ class MIDIPiano {
 
     createKeyboard() {
         const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        const blackKeyPositions = [1, 3, 6, 8, 10]; // C#, D#, F#, G#, A#の位置
+        const whiteKeyWidth = 50;
+        const blackKeyWidth = 30;
 
-        let whiteKeyIndex = 0;
+        // 黒鍵の位置オフセット（実際のピアノの配置に合わせる）
+        // 各値は前の白鍵の幅に対する黒鍵中心位置の割合
+        // C#/D#グループとF#/G#/A#グループで異なる配置パターン
+        const blackKeyOffsets = {
+            1: 0.7,  // C# - Cの右端寄り
+            3: 0.9,  // D# - Dの右端寄り（Eに近い）
+            6: 0.65, // F# - Fの中央より少し右
+            8: 0.75, // G# - Gの右寄り
+            10: 0.85 // A# - Aの右端寄り（Bに近い）
+        };
+
+        let whiteKeyCount = 0;
 
         for (let i = 0; i < 12; i++) {
             const note = notes[i];
@@ -45,11 +57,12 @@ class MIDIPiano {
             key.appendChild(label);
 
             if (isBlack) {
-                // 黒鍵の位置調整
-                const offset = whiteKeyIndex * 50 - 15;
+                // 黒鍵の位置を実際のピアノに近づける
+                const ratio = blackKeyOffsets[i] || 0.5;
+                const offset = (whiteKeyCount - 1) * whiteKeyWidth + whiteKeyWidth * ratio - blackKeyWidth / 2;
                 key.style.left = `${offset}px`;
             } else {
-                whiteKeyIndex++;
+                whiteKeyCount++;
             }
 
             this.keyboard.appendChild(key);
