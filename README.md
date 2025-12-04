@@ -10,6 +10,7 @@
 -   🔊 ベロシティ調整（1-127）
 -   📡 WiFi 経由での MIDI データ送信
 -   🖥️ PC 側で MIDI デバイスとして認識
+-   🎵 **Web MIDI API対応** - ブラウザから直接MIDIデバイスに出力（Cubase、FL Studioなど対応）
 
 ## 必要な環境
 
@@ -96,6 +97,35 @@ PC の DAW（Digital Audio Workstation）や音楽ソフトで受信した MIDI 
 1. サーバーを起動
 2. DAW の MIDI 入力設定で「MIDI Piano Virtual Port」または使用中のポートを選択
 3. スマホから演奏すると、DAW 側で MIDI 入力として認識されます
+
+## Web MIDI API での直接出力（PC ブラウザ用）
+
+サーバーを起動せずに、ブラウザから直接 MIDI デバイスへ出力することもできます。
+
+### 必要な環境：
+
+-   Chrome、Edge、Opera などの Web MIDI API 対応ブラウザ
+-   仮想 MIDI ドライバ（loopMIDI など）または MIDI インターフェース
+
+### 使い方：
+
+1. PC のブラウザで `index.html` または `piano-standalone.html` を開く
+2. 「MIDI デバイスを選択」のドロップダウンから出力先の MIDI デバイスを選択
+    - 例: loopMIDI Port、MIDI インターフェースなど
+3. 「MIDI 接続」ボタンをクリック
+4. DAW 側で選択した MIDI ポートを入力として設定
+5. ピアノキーをクリック/タップして演奏
+
+### 仮想 MIDI ドライバのインストール（Windows）：
+
+1. [loopMIDI](https://www.tobias-erichsen.de/software/loopmidi.html) をダウンロード・インストール
+2. loopMIDI で仮想ポートを作成
+3. ブラウザと DAW の両方で同じ仮想ポートを選択
+
+### 注意事項：
+
+-   WebSocket 接続と Web MIDI 出力は同時に使用できます
+-   Safari は Web MIDI API に対応していません
 
 ## トラブルシューティング
 
