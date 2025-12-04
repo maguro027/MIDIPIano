@@ -7,11 +7,100 @@ class MIDIPiano {
         this.velocity = 80;
         this.activeNotes = new Set();
         this.touchMap = new Map(); // タッチIDと音符のマッピング
+        this.soundEnabled = false; // ローカル音声のオン/オフ
+        this.audioContext = null;
+        this.activeOscillators = new Map(); // アクティブなオシレーター
 
         this.initElements();
+        this.initAudio();
         this.createKeyboard();
         this.attachEventListeners();
         this.updateOctaveDisplay();
+    }
+
+    initAudio() {
+        // AudioContextはユーザーインタラクション後に初期化
+        this.audioContext = null;
+    }
+
+    ensureAudioContext() {
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+    }
+
+    // MIDIノート番号から周波数を計算
+    midiToFrequency(midiNote) {
+        return 440 * Math.pow(2, (midiNote - 69) / 12);
+    }
+
+    // ローカル音声を再生
+    playLocalSound(midiNote) {
+        if (!this.soundEnabled) return;
+
+        this.ensureAudioContext();
+
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+
+        oscillator.type = 'triangle'; // ピアノっぽい音色
+        oscillator.frequency.setValueAtTime(
+            this.midiToFrequency(midiNote),
+            this.audioContext.currentTime
+        );
+
+        // ベロシティに基づく音量
+        const volume = (this.velocity / 127) * 0.3;
+        gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(
+            volume * 0.8,
+            this.audioContext.currentTime + 0.1
+        );
+
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        oscillator.start();
+
+        this.activeOscillators.set(midiNote, { oscillator, gainNode });
+    }
+
+    // ローカル音声を停止
+    stopLocalSound(midiNote) {
+        const oscillatorData = this.activeOscillators.get(midiNote);
+        if (oscillatorData) {
+            const { oscillator, gainNode } = oscillatorData;
+            gainNode.gain.exponentialRampToValueAtTime(
+                0.001,
+                this.audioContext.currentTime + 0.1
+            );
+            oscillator.stop(this.audioContext.currentTime + 0.1);
+            this.activeOscillators.delete(midiNote);
+        }
+    }
+
+    toggleSound() {
+        this.soundEnabled = !this.soundEnabled;
+        this.updateSoundButtonState();
+        if (this.soundEnabled) {
+            this.ensureAudioContext();
+        }
+    }
+
+    updateSoundButtonState() {
+        if (this.soundToggleBtn) {
+            if (this.soundEnabled) {
+                this.soundToggleBtn.textContent = '🔊 音声オン';
+                this.soundToggleBtn.classList.add('sound-on');
+                this.soundToggleBtn.classList.remove('sound-off');
+            } else {
+                this.soundToggleBtn.textContent = '🔇 音声オフ';
+                this.soundToggleBtn.classList.remove('sound-on');
+                this.soundToggleBtn.classList.add('sound-off');
+            }
+        }
     }
 
     initElements() {
@@ -23,6 +112,8 @@ class MIDIPiano {
         this.velocitySlider = document.getElementById('velocity');
         this.velocityValue = document.getElementById('velocityValue');
         this.keyboard = document.getElementById('keyboard');
+        this.soundToggleBtn = document.getElementById('soundToggleBtn');
+        this.updateSoundButtonState();
     }
 
     createKeyboard() {
@@ -59,6 +150,11 @@ class MIDIPiano {
     attachEventListeners() {
         // 接続ボタン
         this.connectBtn.addEventListener('click', () => this.toggleConnection());
+
+        // 音声トグルボタン
+        if (this.soundToggleBtn) {
+            this.soundToggleBtn.addEventListener('click', () => this.toggleSound());
+        }
 
         // オクターブコントロール
         document.getElementById('octaveUp').addEventListener('click', () => {
@@ -230,6 +326,9 @@ class MIDIPiano {
         this.activeNotes.add(midiNote);
         keyElement.classList.add('active');
 
+        // ローカル音声を再生
+        this.playLocalSound(midiNote);
+
         this.sendMIDI({
             type: 'noteOn',
             note: midiNote,
@@ -246,6 +345,9 @@ class MIDIPiano {
             this.activeNotes.delete(midiNote);
             this.touchMap.delete(touchId);
             keyElement.classList.remove('active');
+
+            // ローカル音声を停止
+            this.stopLocalSound(midiNote);
 
             this.sendMIDI({
                 type: 'noteOff',

@@ -167,6 +167,35 @@ h1 {
     border: none;
 }
 
+.sound-toggle {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.sound-toggle.sound-off {
+    background: #6c757d;
+    color: white;
+}
+
+.sound-toggle.sound-on {
+    background: #28a745;
+    color: white;
+}
+
+.sound-toggle:hover {
+    opacity: 0.9;
+}
+
+.sound-toggle:active {
+    transform: scale(0.95);
+}
+
 .piano-container {
     overflow-x: auto;
     margin-bottom: 20px;
